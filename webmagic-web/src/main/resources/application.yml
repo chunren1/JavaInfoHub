@@ -47,3 +47,30 @@ crawl:
   retry:
     max-times: 3
     base-delay: 2000
+
+# ================================================================
+# AI 增强配置 — 硅基流动（OpenAI 兼容，国内直连，免费额度）
+# 获取 API Key: https://siliconflow.cn → 注册 → API 密钥
+# 设置环境变量: export AI_API_KEY=sk-xxxxx  (或写在下方 api-key 字段)
+# ================================================================
+ai:
+  enabled: false                    # 总开关，false = 零 API 调用
+  provider:
+    base-url: https://api.siliconflow.cn/v1
+    api-key: ${AI_API_KEY:}         # 从环境变量读取，不要提交到 git
+    model: Qwen/Qwen2.5-7B-Instruct # 免费模型，中文效果好
+    temperature: 0.1
+    max-tokens: 4096
+    timeout-seconds: 60
+  features:
+    extraction-fallback:
+      enabled: true
+      min-threshold: 0              # 手动提取 ≤ 此数量时触发 AI fallback
+    enrichment:
+      enabled: true
+      enrich-summary: true          # AI 生成文章摘要
+      enrich-tags: true             # AI 生成技术标签
+      summary-min-length: 50        # 原文摘要短于此长度触发 AI 生成
+  rate-limit:
+    max-requests-per-crawl: 100     # 单次爬取最多 AI 调用次数
+    delay-between-calls-ms: 500     # 调用间隔（毫秒）

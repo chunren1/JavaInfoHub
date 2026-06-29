@@ -5,8 +5,12 @@ import com.webmagic.common.enums.SourceType;
 import com.webmagic.common.util.RegexUtils;
 import com.webmagic.common.util.SleepUtils;
 import com.webmagic.common.util.UserAgentUtils;
+import com.webmagic.core.processor.AiProcessorHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
 import us.codecraft.webmagic.Page;
 import us.codecraft.webmagic.Site;
 import us.codecraft.webmagic.processor.PageProcessor;
@@ -40,12 +44,17 @@ import java.util.List;
  * @author webmagic-demo
  */
 @Slf4j
+@Component
+@Scope("prototype")
 public class OsChinaProcessor implements PageProcessor {
 
     private static final String LIST_URL_TEMPLATE = "https://www.oschina.net/news?page=%d";
     private static final String START_URL = "https://www.oschina.net/news";
 
     private int maxPages = 3;
+
+    @Autowired(required = false)
+    private AiProcessorHelper aiProcessorHelper;
 
     private Site site = Site.me()
             .setDomain("oschina.net")
@@ -83,7 +92,12 @@ public class OsChinaProcessor implements PageProcessor {
 
         if (titles.isEmpty()) {
             log.warn("OsChina XPath found no articles - page structure may have changed");
-            page.putField("articles", new ArrayList<TechArticle>());
+            // AI fallback：当手动 XPath 失效时，用 LLM 从原始 HTML 提取
+            List<TechArticle> aiArticles = aiFallback(page);
+            page.putField("articles", aiArticles);
+            if (!aiArticles.isEmpty()) {
+                log.info("AI fallback recovered {} articles for OsChina", aiArticles.size());
+            }
             return;
         }
 
@@ -191,5 +205,15 @@ public class OsChinaProcessor implements PageProcessor {
 
     public void setMaxPages(int maxPages) {
         this.maxPages = maxPages;
+    }
+
+    /**
+     * AI fallback — 当 XPath 提取返回 0 时，调用 LLM 从原始 HTML 提取
+     */
+    private List<TechArticle> aiFallback(Page page) {
+        if (aiProcessorHelper != null && aiProcessorHelper.shouldFallback(0)) {
+            return aiProcessorHelper.extractArticlesFromHtml(page, SourceType.OSCHINA);
+        }
+        return new ArrayList<>();
     }
 }

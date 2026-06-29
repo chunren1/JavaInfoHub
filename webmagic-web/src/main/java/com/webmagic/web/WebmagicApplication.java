@@ -1,8 +1,10 @@
 package com.webmagic.web;
 
+import com.webmagic.core.config.AiProperties;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
@@ -12,12 +14,14 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  *  - @SpringBootApplication：Spring Boot 核心注解
  *  - @MapperScan：MyBatis Mapper 扫描（展示 Spring + MyBatis 集成）
  *  - @EnableScheduling：开启定时任务（展示 Spring @Scheduled）
+ *  - @EnableConfigurationProperties：AI 配置绑定
  *
  * @author webmagic-demo
  */
 @SpringBootApplication(scanBasePackages = "com.webmagic")
 @MapperScan("com.webmagic.dao.mapper")
 @EnableScheduling
+@EnableConfigurationProperties(AiProperties.class)
 public class WebmagicApplication {
 
     public static void main(String[] args) {

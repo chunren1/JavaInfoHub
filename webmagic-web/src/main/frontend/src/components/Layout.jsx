@@ -11,6 +11,7 @@ export default function Layout() {
         <div className="nav-links">
           <NavLink to="/" end>首页</NavLink>
           <NavLink to="/articles">文章列表</NavLink>
+          <NavLink to="/ai-config">🤖 AI 配置</NavLink>
         </div>
       </nav>
       <main className="main">

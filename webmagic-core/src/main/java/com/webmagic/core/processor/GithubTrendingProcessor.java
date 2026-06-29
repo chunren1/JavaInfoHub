@@ -4,8 +4,12 @@ import com.webmagic.common.entity.TechArticle;
 import com.webmagic.common.enums.SourceType;
 import com.webmagic.common.util.RegexUtils;
 import com.webmagic.common.util.UserAgentUtils;
+import com.webmagic.core.processor.AiProcessorHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
 import us.codecraft.webmagic.Page;
 import us.codecraft.webmagic.Site;
 import us.codecraft.webmagic.processor.PageProcessor;
@@ -36,6 +40,8 @@ import java.util.List;
  * @author webmagic-demo
  */
 @Slf4j
+@Component
+@Scope("prototype")
 public class GithubTrendingProcessor implements PageProcessor {
 
     /** GitHub Trending 页面 URL */
@@ -45,6 +51,9 @@ public class GithubTrendingProcessor implements PageProcessor {
     private static final String TRENDING_URL_TEMPLATE = "https://github.com/trending/%s?since=daily";
 
     private String language = "java";
+
+    @Autowired(required = false)
+    private AiProcessorHelper aiProcessorHelper;
 
     private Site site = Site.me()
             .setDomain("github.com")
@@ -79,7 +88,12 @@ public class GithubTrendingProcessor implements PageProcessor {
 
         if (repos == null || repos.isEmpty()) {
             log.warn("GitHub Trending 未找到项目列表，可能被限流或页面结构变更");
-            page.putField("articles", new ArrayList<TechArticle>());
+            // AI fallback：CSS 选择器失效时用 LLM 从原始 HTML 提取
+            List<TechArticle> aiArticles = aiFallback(page);
+            page.putField("articles", aiArticles);
+            if (!aiArticles.isEmpty()) {
+                log.info("AI fallback recovered {} articles for GitHub Trending", aiArticles.size());
+            }
             return;
         }
 
@@ -211,5 +225,15 @@ public class GithubTrendingProcessor implements PageProcessor {
 
     public void setLanguage(String language) {
         this.language = language;
+    }
+
+    /**
+     * AI fallback — 当 CSS 选择器失效时调用 LLM 从原始 HTML 提取
+     */
+    private List<TechArticle> aiFallback(Page page) {
+        if (aiProcessorHelper != null && aiProcessorHelper.shouldFallback(0)) {
+            return aiProcessorHelper.extractArticlesFromHtml(page, SourceType.GITHUB);
+        }
+        return new ArrayList<>();
     }
 }

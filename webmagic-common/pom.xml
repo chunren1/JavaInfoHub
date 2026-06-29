@@ -17,11 +17,23 @@
     <description>公共模块：实体类、枚举、工具类。零框架依赖，可被任何 Java 项目复用。</description>
 
     <dependencies>
-        <!-- 仅依赖 lombok，零框架依赖 -->
+        <!-- Lombok — 消除样板代码 -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <optional>true</optional>
+        </dependency>
+
+        <!-- Jackson — AI JSON 解析（纯库，非框架） -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+
+        <!-- SLF4J — 日志门面（纯接口，非框架） -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
         </dependency>
     </dependencies>
 </project>

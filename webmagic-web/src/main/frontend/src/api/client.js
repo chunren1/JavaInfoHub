@@ -37,3 +37,11 @@ export function triggerCrawl(source) {
 export function getCrawlStatus() {
   return request('/crawl/status');
 }
+
+export function getAiStatus() {
+  return request('/ai/status');
+}
+
+export function testAiConnection() {
+  return request('/ai/test', { method: 'POST' });
+}

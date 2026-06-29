@@ -1,5 +1,6 @@
 package com.webmagic.core.scheduler;
 
+import com.webmagic.core.pipeline.AiEnrichmentPipeline;
 import com.webmagic.core.pipeline.ArticlePersistPipeline;
 import com.webmagic.core.pipeline.DedupPipeline;
 import com.webmagic.core.processor.*;
@@ -8,6 +9,7 @@ import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 import us.codecraft.webmagic.Spider;
 
@@ -30,7 +32,13 @@ import java.util.concurrent.ConcurrentHashMap;
 public class CrawlTriggerService {
 
     @Autowired
+    private ApplicationContext applicationContext;
+
+    @Autowired
     private DedupPipeline dedupPipeline;
+
+    @Autowired
+    private AiEnrichmentPipeline aiEnrichmentPipeline;
 
     @Autowired
     private ArticlePersistPipeline articlePersistPipeline;
@@ -144,41 +152,45 @@ public class CrawlTriggerService {
 
         switch (source.toUpperCase()) {
             case "JUEJIN":
-                JuejinPageProcessor p1 = new JuejinPageProcessor();
+                JuejinPageProcessor p1 = applicationContext.getBean(JuejinPageProcessor.class);
                 p1.setMaxPages(juejinMaxPages);
                 spider = Spider.create(p1)
                         .addUrl("https://juejin.cn")
                         .addPipeline(dedupPipeline)
+                        .addPipeline(aiEnrichmentPipeline)
                         .addPipeline(articlePersistPipeline)
                         .thread(1);
                 break;
 
             case "SEGMENTFAULT":
-                SegmentfaultPageProcessor p2 = new SegmentfaultPageProcessor();
+                SegmentfaultPageProcessor p2 = applicationContext.getBean(SegmentfaultPageProcessor.class);
                 p2.setMaxPages(segmentfaultMaxPages);
                 spider = Spider.create(p2)
                         .addUrl("https://segmentfault.com/news")
                         .addPipeline(dedupPipeline)
+                        .addPipeline(aiEnrichmentPipeline)
                         .addPipeline(articlePersistPipeline)
                         .thread(1);
                 break;
 
             case "GITHUB":
-                GithubTrendingProcessor p3 = new GithubTrendingProcessor();
+                GithubTrendingProcessor p3 = applicationContext.getBean(GithubTrendingProcessor.class);
                 p3.setLanguage("java");
                 spider = Spider.create(p3)
                         .addUrl("https://github.com/trending/java?since=daily")
                         .addPipeline(dedupPipeline)
+                        .addPipeline(aiEnrichmentPipeline)
                         .addPipeline(articlePersistPipeline)
                         .thread(1);
                 break;
 
             case "OSCHINA":
-                OsChinaProcessor p4 = new OsChinaProcessor();
+                OsChinaProcessor p4 = applicationContext.getBean(OsChinaProcessor.class);
                 p4.setMaxPages(oschinaMaxPages);
                 spider = Spider.create(p4)
                         .addUrl("https://www.oschina.net/news")
                         .addPipeline(dedupPipeline)
+                        .addPipeline(aiEnrichmentPipeline)
                         .addPipeline(articlePersistPipeline)
                         .thread(1);
                 break;

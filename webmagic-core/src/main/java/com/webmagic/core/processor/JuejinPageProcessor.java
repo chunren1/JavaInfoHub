@@ -7,7 +7,11 @@ import com.webmagic.common.entity.TechArticle;
 import com.webmagic.common.enums.SourceType;
 import com.webmagic.common.util.SleepUtils;
 import com.webmagic.common.util.UserAgentUtils;
+import com.webmagic.core.processor.AiProcessorHelper;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
 import us.codecraft.webmagic.Page;
 import us.codecraft.webmagic.Request;
 import us.codecraft.webmagic.Site;
@@ -87,6 +91,8 @@ import java.util.Map;
  * @author webmagic-demo
  */
 @Slf4j
+@Component
+@Scope("prototype")
 public class JuejinPageProcessor implements PageProcessor {
 
     /** 掘金推荐 API 地址 */
@@ -98,6 +104,9 @@ public class JuejinPageProcessor implements PageProcessor {
 
     /** 最大翻页次数（防止无限循环） */
     private int maxPages = 3;
+
+    @Autowired(required = false)
+    private AiProcessorHelper aiProcessorHelper;
     private int currentPage = 0;
 
     /**
@@ -181,6 +190,13 @@ public class JuejinPageProcessor implements PageProcessor {
             // 提取文章数据
             JSONArray data = response.getJSONArray("data");
             List<TechArticle> articles = parseArticles(data);
+
+            // AI fallback：JSON API 返回空数组时用 LLM 兜底
+            if (articles.isEmpty() && aiProcessorHelper != null
+                    && aiProcessorHelper.shouldFallback(0)) {
+                log.warn("Juejin API returned 0 articles, triggering AI fallback");
+                articles = aiProcessorHelper.extractArticlesFromHtml(page, SourceType.JUEJIN);
+            }
 
             // 放入 ResultItems → 后续 Pipeline 处理
             page.putField("articles", articles);

@@ -25,6 +25,9 @@ export default function ArticleCard({ article }) {
         </div>
         <div className="article-meta">
           <span className={`badge badge-${s}`}>{article.source}</span>
+          {article.tags && article.tags.includes('[AI]') && (
+            <span className="tag" style={{ background: '#fff7e6', color: '#fa8c16', fontWeight: 600 }}>🤖 AI 增强</span>
+          )}
           {article.author && <span>👤 {article.author}</span>}
           {article.viewCount > 0 && <span>👁 {article.viewCount}</span>}
           {article.starCount > 0 && <span>❤ {article.starCount}</span>}

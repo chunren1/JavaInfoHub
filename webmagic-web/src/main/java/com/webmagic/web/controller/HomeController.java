@@ -15,4 +15,9 @@ public class HomeController {
     public String index() {
         return "forward:/index.html";
     }
+
+    @GetMapping("/ai-config")
+    public String aiConfig() {
+        return "forward:/index.html";
+    }
 }

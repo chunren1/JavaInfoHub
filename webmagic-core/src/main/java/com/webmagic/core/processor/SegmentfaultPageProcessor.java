@@ -5,8 +5,12 @@ import com.webmagic.common.enums.SourceType;
 import com.webmagic.common.util.RegexUtils;
 import com.webmagic.common.util.SleepUtils;
 import com.webmagic.common.util.UserAgentUtils;
+import com.webmagic.core.processor.AiProcessorHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
 import us.codecraft.webmagic.Page;
 import us.codecraft.webmagic.Site;
 import us.codecraft.webmagic.processor.PageProcessor;
@@ -49,7 +53,12 @@ import java.util.Locale;
  * @author webmagic-demo
  */
 @Slf4j
+@Component
+@Scope("prototype")
 public class SegmentfaultPageProcessor implements PageProcessor {
+
+    @Autowired(required = false)
+    private AiProcessorHelper aiProcessorHelper;
 
     /** SegmentFault 新闻列表 URL 模板 */
     private static final String LIST_URL = "https://segmentfault.com/news?page=%d";
@@ -82,6 +91,12 @@ public class SegmentfaultPageProcessor implements PageProcessor {
 
         if (newsItems == null || newsItems.isEmpty()) {
             log.warn("SegmentFault 未找到文章列表，可能页面结构已变更");
+            // AI fallback：CSS 选择器失效时用 LLM 从原始 HTML 提取
+            List<TechArticle> aiArticles = aiFallback(page);
+            page.putField("articles", aiArticles);
+            if (!aiArticles.isEmpty()) {
+                log.info("AI fallback recovered {} articles for SegmentFault", aiArticles.size());
+            }
             return;
         }
 
@@ -202,5 +217,15 @@ public class SegmentfaultPageProcessor implements PageProcessor {
 
     public void setMaxPages(int maxPages) {
         this.maxPages = maxPages;
+    }
+
+    /**
+     * AI fallback — 当 CSS 选择器失效时调用 LLM 从原始 HTML 提取
+     */
+    private List<TechArticle> aiFallback(Page page) {
+        if (aiProcessorHelper != null && aiProcessorHelper.shouldFallback(0)) {
+            return aiProcessorHelper.extractArticlesFromHtml(page, SourceType.SEGMENTFAULT);
+        }
+        return new ArrayList<>();
     }
 }
