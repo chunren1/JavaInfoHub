@@ -1,0 +1,42 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mvn clean *)",
+      "Bash(cd D:/JavaInfoHub && mvn clean compile -pl webmagic-dao,webmagic-core -DskipTests 2>&1 | tail -40, description: *)",
+      "Bash(cd D:/JavaInfoHub && mvn clean compile -pl webmagic-core -am -DskipTests 2>&1 | tail -30, description: *)",
+      "Bash(mysql --version)",
+      "Bash(mysql -u root -proot -e \"SELECT 1\")",
+      "Bash(net start *)",
+      "Bash(sc start *)",
+      "Bash(NET START *)",
+      "Bash(cd D:/JavaInfoHub && find . -type f \\\\\\\\\\( -name \\\\\"*.java\\\\\" -o -name \\\\\"*.xml\\\\\" -o -name \\\\\"*.yml\\\\\" -o -name \\\\\"*.html\\\\\" -o -name \\\\\"*.css\\\\\" -o -name \\\\\"*.sql\\\\\" -o -name \\\\\"*.md\\\\\" \\\\\\\\\\) ! -path \\\\\"*/target/*\\\\\" | wc -l, description: *)",
+      "Bash(cd D:/JavaInfoHub && find . -name \\\\\"*.class\\\\\" -path \\\\\"*/target/*\\\\\" | wc -l, description: *)",
+      "Bash(docker compose *)",
+      "Bash(docker exec *)",
+      "Bash(cd D:/JavaInfoHub && mvn spring-boot:run -pl webmagic-web -DskipTests 2>&1 &\\\\nsleep 20\\\\necho \\\\\"=== Application started? ===\\\\\" 2>/dev/null || true, description: *)",
+      "Bash(mvn spring-boot:run -pl webmagic-web -DskipTests)",
+      "Bash(cat 'C:/Users/靖敏/AppData/Local/Temp/claude/D--JavaInfoHub/92ebbe5e-1a16-48d3-a562-330d77f24344/tasks/bpvvd8fjp.output' *)",
+      "Bash(cat *)",
+      "Bash(mvn install *)",
+      "Bash(cd D:/JavaInfoHub && mvn spring-boot:run -pl webmagic-web -DskipTests, description: *)",
+      "Bash(sleep 25 && echo done, description: *)",
+      "Bash(curl -s http://localhost:8080)",
+      "Bash(pkill -f 'spring-boot:run' 2>/dev/null; pkill -f 'WebmagicApplication' 2>/dev/null; sleep 2; echo 'killed', description: *)",
+      "Bash({ \\\\\"command\\\\\": \\\\\"taskkill /F /IM java.exe 2>&1 || echo 'no java process'\\\\\", \\\\\"description\\\\\": \\\\\"Kill any existing Java processes\\\\\" }} *)",
+      "Bash(taskkill -F -IM java.exe)",
+      "Bash(curl -s http://localhost:8080/articles)",
+      "Bash(curl -s http://localhost:8080/jobs)",
+      "Bash(wmic process *)",
+      "Bash(curl *)",
+      "Bash(D:/JavaInfoHub\\\\ *)",
+      "Bash(find \\\\\\\\\\\\\"D:/JavaInfoHub\\\\\\\\\\\\\" -name \\\\\\\\\\\\\"CrawlTriggerService.java\\\\\\\\\\\\\" 2>/dev/null, description: *)",
+      "Bash(: *)",
+      "Bash(mvn clean compile -DskipTests 2&>1 | tail -25, description: *)",
+      "Bash(mvn spring-boot:run -pl webmagic-web -Dskipebmagic-web -DskipTests\")",
+      "Bash(mvn spring-boot:run -pl webmagic-web -Dskipebmagic-web -DskipTests)",
+      "Bash(curl -s http://localhost:8080/articles 2>&1 | grep -o P'[^<]*<[^>]*>[^<]*[^<]*<[^>]*>[^<]*' | head -10 *)",
+      "Bash(npm install *)",
+      "Bash(npx vite *)"
+    ]
+  }
+}

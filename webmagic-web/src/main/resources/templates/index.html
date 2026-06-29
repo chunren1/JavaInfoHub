@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Java Developer Info Hub</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="brand">Java InfoHub</div>
+    <div class="nav-links">
+        <a href="/" class="active">Home</a>
+        <a href="/articles">Articles</a>
+    </div>
+</nav>
+
+<div class="container">
+
+    <div th:if="${dbError}" class="db-error">
+        DB Connection Error: <span th:text="${dbError}"></span>
+        <br>Please ensure MySQL container is running: docker compose up -d
+    </div>
+
+    <!-- Dashboard: Source Stats -->
+    <h2 style="margin-bottom:12px;color:#1a1a2e;">Data Source Statistics</h2>
+    <div class="stats-grid">
+        <div class="stat-card juejin">
+            <div class="stat-num" th:text="${sourceCounts['JUEJIN'] != null ? sourceCounts['JUEJIN'] : 0}">0</div>
+            <div class="stat-label">Juejin Articles</div>
+        </div>
+        <div class="stat-card segmentfault">
+            <div class="stat-num" th:text="${sourceCounts['SEGMENTFAULT'] != null ? sourceCounts['SEGMENTFAULT'] : 0}">0</div>
+            <div class="stat-label">SegmentFault Articles</div>
+        </div>
+        <div class="stat-card github">
+            <div class="stat-num" th:text="${sourceCounts['GITHUB'] != null ? sourceCounts['GITHUB'] : 0}">0</div>
+            <div class="stat-label">GitHub Trending</div>
+        </div>
+        <div class="stat-card oschina">
+            <div class="stat-num" th:text="${sourceCounts['OSCHINA'] != null ? sourceCounts['OSCHINA'] : 0}">0</div>
+            <div class="stat-label">OsChina News</div>
+        </div>
+    </div>
+
+    <!-- Search bar -->
+    <div class="search-bar">
+        <form action="/articles" method="get" style="display:flex;gap:12px;align-items:center;flex:1;flex-wrap:wrap;">
+            <input type="text" name="keyword" placeholder="Search articles (e.g. Spring, MyBatis, microservices)">
+            <select name="source">
+                <option value="">All Sources</option>
+                <option value="JUEJIN">Juejin</option>
+                <option value="SEGMENTFAULT">SegmentFault</option>
+                <option value="GITHUB">GitHub</option>
+                <option value="OSCHINA">OsChina</option>
+            </select>
+            <button type="submit" class="btn-search">Search</button>
+        </form>
+    </div>
+
+    <!-- Action panel: One-click crawl -->
+    <div class="action-panel">
+        <strong>Data Collection</strong>
+        <span style="color:#999;font-size:13px;">|</span>
+        <button class="btn-crawl" onclick="triggerCrawl('all')">Crawl All</button>
+        <button class="btn-crawl-sm" onclick="triggerCrawl('juejin')">Juejin</button>
+        <button class="btn-crawl-sm" onclick="triggerCrawl('segmentfault')">SegmentFault</button>
+        <button class="btn-crawl-sm" onclick="triggerCrawl('github')">GitHub</button>
+        <button class="btn-crawl-sm" onclick="triggerCrawl('oschina')">OsChina</button>
+        <span id="crawlStatus" style="font-size:13px;color:#999;margin-left:auto;"></span>
+    </div>
+
+    <!-- Latest data preview -->
+    <h3 style="margin-bottom:12px;color:#1a1a2e;">Latest Data</h3>
+
+    <div th:if="${latestArticles != null and !latestArticles.isEmpty()}">
+        <ul class="item-list">
+            <li class="item-card" th:each="article : ${latestArticles}">
+                <div class="item-body">
+                    <div class="item-title">
+                        <a th:href="@{/articles/{id}(id=${article.id})}" th:text="${article.title}">Title</a>
+                    </div>
+                    <div class="item-meta">
+                        <span th:class="'source-badge ' + ${article.source.toLowerCase()}"
+                              th:text="${article.source}">Source</span>
+                        <span th:if="${article.author}" th:text="${article.author}">Author</span>
+                        <span th:if="${article.starCount > 0}" th:text="${article.starCount}">Stars</span>
+                    </div>
+                    <div class="item-summary" th:if="${article.summary}"
+                         th:text="${#strings.abbreviate(article.summary, 200)}">Summary</div>
+                </div>
+            </li>
+        </ul>
+        <div style="text-align:center;margin-top:16px;">
+            <a href="/articles" class="btn-search" style="display:inline-block;text-decoration:none;">View All Articles</a>
+        </div>
+    </div>
+
+    <div th:unless="${latestArticles != null and !latestArticles.isEmpty()}" class="empty-state">
+        <div class="empty-icon">EMPTY</div>
+        <p>No data yet</p>
+        <p style="font-size:13px;color:#bbb;margin-top:8px;">
+            Click "Crawl All" to start collecting data, or import pre-seeded data.
+        </p>
+    </div>
+
+</div>
+
+<div class="footer">
+    Java Developer Info Hub - WebMagic + Spring Boot + MyBatis - Interview Demo Project
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+    function triggerCrawl(source) {
+        var btn = event.target;
+        btn.disabled = true;
+        var origText = btn.textContent;
+        btn.textContent = '...';
+
+        var url = source === 'all' ? '/crawl/trigger' : '/crawl/trigger/' + source;
+        var statusEl = document.getElementById('crawlStatus');
+        showToast('Crawling ' + (source === 'all' ? 'all sources' : source) + '...', 'info');
+        if (statusEl) statusEl.textContent = 'Crawling...';
+
+        fetch(url, { method: 'POST' })
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                btn.disabled = false;
+                btn.textContent = origText;
+                if (data.success) {
+                    var msg = 'Crawl complete!';
+                    if (data.results) {
+                        var ok = Object.values(data.results).filter(function(r) { return r.success; }).length;
+                        msg = 'Crawl done! ' + ok + '/' + Object.keys(data.results).length + ' sources OK';
+                    }
+                    showToast(msg, 'success');
+                    if (statusEl) statusEl.textContent = 'Done, refreshing...';
+                    setTimeout(function() { window.location.reload(); }, 3000);
+                } else {
+                    showToast('Failed: ' + (data.message || 'unknown'), 'error');
+                    if (statusEl) statusEl.textContent = 'Failed';
+                }
+            })
+            .catch(function(err) {
+                btn.disabled = false;
+                btn.textContent = origText;
+                showToast('Network error: ' + err.message, 'error');
+            });
+    }
+
+    function showToast(msg, type) {
+        var toast = document.getElementById('toast');
+        toast.textContent = msg;
+        toast.className = 'toast ' + type;
+        setTimeout(function() { toast.className = 'toast'; }, 4000);
+    }
+
+    refreshStatus = function() {
+        fetch('/crawl/status')
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                var el = document.getElementById('crawlStatus');
+                if (!el || !data.statusMap || !Object.keys(data.statusMap).length) return;
+                var vals = Object.values(data.statusMap);
+                var latest = vals[vals.length - 1];
+                if (latest && latest.running) {
+                    el.innerHTML = '<span class="status-dot running"></span> Crawling...';
+                } else if (latest && latest.lastCrawlTime) {
+                    el.innerHTML = '<span class="status-dot idle"></span> Last: ' + (latest.lastCrawlTime || '');
+                }
+            });
+    };
+    refreshStatus();
+</script>
+
+</body>
+</html>

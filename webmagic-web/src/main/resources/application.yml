@@ -1,0 +1,49 @@
+# ================================================================
+# Java 开发者信息聚合平台 — Spring Boot 配置
+# 【JD 覆盖：Spring + MySQL + MyBatis + 日志】
+# ================================================================
+
+server:
+  port: 8080
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/java_info_hub?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: root
+    password: root
+  thymeleaf:
+    cache: false
+    prefix: classpath:/templates/
+    suffix: .html
+    encoding: UTF-8
+    mode: HTML
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.webmagic.common.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+pagehelper:
+  helper-dialect: mysql
+  reasonable: true
+  support-methods-arguments: true
+
+logging:
+  level:
+    com.webmagic: DEBUG
+    com.webmagic.dao.mapper: DEBUG
+    us.codecraft.webmagic: INFO
+
+crawl:
+  max-pages:
+    juejin: 3
+    segmentfault: 3
+    github: 1
+    oschina: 3
+  sleep-time: 3000
+  retry:
+    max-times: 3
+    base-delay: 2000

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文章列表 - Java 开发者信息聚合平台</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="brand">☕ Java<span>信息聚合</span></div>
+    <div class="nav-links">
+        <a href="/">首页</a>
+        <a href="/articles" class="active">文章</a>
+            </div>
+</nav>
+
+<div class="container">
+
+    <!-- 搜索栏 -->
+    <div class="search-bar">
+        <form action="/articles" method="get" style="display:flex;gap:12px;align-items:center;flex:1;flex-wrap:wrap;">
+            <input type="text" name="keyword" placeholder="🔍 搜索文章标题、摘要、标签..."
+                   th:value="${keyword}">
+            <select name="source">
+                <option value="">全部来源</option>
+                <option value="JUEJIN" th:selected="${currentSource == 'JUEJIN'}">掘金</option>
+                <option value="SEGMENTFAULT" th:selected="${currentSource == 'SEGMENTFAULT'}">SegmentFault</option>
+                <option value="GITHUB" th:selected="${currentSource == 'GITHUB'}">GitHub</option>
+                <option value="OSCHINA" th:selected="${currentSource == 'OSCHINA'}">开源中国</option>
+            </select>
+            <button type="submit" class="btn-search">搜索</button>
+            <a th:href="@{/articles}" class="btn-reset" style="text-decoration:none;">重置</a>
+        </form>
+    </div>
+
+    <!-- 统计摘要 -->
+    <div style="color:#999;font-size:14px;margin-bottom:16px;" th:if="${pageInfo != null}">
+        共 <strong th:text="${pageInfo.total}">0</strong> 条文章
+        <span th:if="${keyword}">，搜索「<strong th:text="${keyword}"></strong>」</span>
+        <span th:if="${currentSource}">，来源：<strong th:text="${currentSource}"></strong></span>
+    </div>
+
+    <!-- 文章列表 -->
+    <ul class="item-list" th:if="${pageInfo != null and !pageInfo.list.isEmpty()}">
+        <li class="item-card" th:each="article : ${pageInfo.list}">
+            <div class="item-icon" th:switch="${article.source}">
+                <span th:case="'JUEJIN'">📰</span>
+                <span th:case="'SEGMENTFAULT'">📝</span>
+                <span th:case="'GITHUB'">⭐</span>
+                <span th:case="'OSCHINA'">📢</span>
+                <span th:case="*">📄</span>
+            </div>
+            <div class="item-body">
+                <div class="item-title">
+                    <a th:href="@{/articles/{id}(id=${article.id})}" th:text="${article.title}">标题</a>
+                </div>
+                <div class="item-meta">
+                    <span th:class="'source-badge ' + ${article.source.toLowerCase()}"
+                          th:text="${article.source}">来源</span>
+                    <span th:if="${article.author}">👤 <span th:text="${article.author}"></span></span>
+                    <span th:if="${article.viewCount > 0}">👁 <span th:text="${article.viewCount}"></span></span>
+                    <span th:if="${article.starCount > 0}">❤ <span th:text="${article.starCount}"></span></span>
+                    <span th:if="${article.publishTime}"
+                          th:text="${#temporals.format(article.publishTime, 'yyyy-MM-dd HH:mm')}"></span>
+                    <span th:if="${article.crawlTime}"
+                          style="color:#ccc;"
+                          th:text="'抓取于 ' + ${#temporals.format(article.crawlTime, 'MM-dd HH:mm')}"></span>
+                </div>
+                <div class="item-summary" th:if="${article.summary}" th:text="${article.summary}"></div>
+            </div>
+        </li>
+    </ul>
+
+    <!-- 空状态 -->
+    <div th:unless="${pageInfo != null and !pageInfo.list.isEmpty()}" class="empty-state">
+        <div class="empty-icon">📭</div>
+        <p th:if="${keyword or currentSource}">未找到匹配的文章</p>
+        <p th:unless="${keyword or currentSource}">暂无文章数据</p>
+        <p style="font-size:13px;color:#bbb;margin-top:8px;">
+            <a href="/">返回首页</a> 触发爬取获取数据
+        </p>
+    </div>
+
+    <!-- 分页 -->
+    <div class="pagination" th:if="${pageInfo != null and pageInfo.pages > 1}">
+        <!-- 首页 -->
+        <a th:if="${pageInfo.pageNum > 1}"
+           th:href="@{/articles(keyword=${keyword}, source=${currentSource}, page=1)}">首页</a>
+        <span th:unless="${pageInfo.pageNum > 1}" class="disabled">首页</span>
+
+        <!-- 上一页 -->
+        <a th:if="${pageInfo.pageNum > 1}"
+           th:href="@{/articles(keyword=${keyword}, source=${currentSource}, page=${pageInfo.pageNum - 1})}">← 上一页</a>
+        <span th:unless="${pageInfo.pageNum > 1}" class="disabled">← 上一页</span>
+
+        <!-- 页码 -->
+        <span class="current" th:text="${pageInfo.pageNum}">1</span>
+        <span style="padding:8px 4px;font-size:13px;color:#999;"
+              th:text="'/ ' + ${pageInfo.pages} + ' 页'"></span>
+
+        <!-- 下一页 -->
+        <a th:if="${pageInfo.pageNum < pageInfo.pages}"
+           th:href="@{/articles(keyword=${keyword}, source=${currentSource}, page=${pageInfo.pageNum + 1})}">下一页 →</a>
+        <span th:unless="${pageInfo.pageNum < pageInfo.pages}" class="disabled">下一页 →</span>
+
+        <!-- 末页 -->
+        <a th:if="${pageInfo.pageNum < pageInfo.pages}"
+           th:href="@{/articles(keyword=${keyword}, source=${currentSource}, page=${pageInfo.pages})}">末页</a>
+        <span th:unless="${pageInfo.pageNum < pageInfo.pages}" class="disabled">末页</span>
+    </div>
+
+</div>
+
+<div class="footer">
+    Java 开发者信息聚合平台 · 多源技术文章聚合
+</div>
+
+</body>
+</html>

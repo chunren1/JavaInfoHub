@@ -1,0 +1,36 @@
+# Maven
+target/
+*.jar
+*.war
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.settings/
+.project
+.classpath
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Temp
+*.tmp
+*.bak
+*.swp
+*~
+
+# Frontend
+node_modules/
+webmagic-web/src/main/resources/static/assets/
+
+# Interview & AI assistant (DO NOT COMMIT)
+INTERVIEW.md
+.codebuddy/

@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.webmagic.dao.mapper.TechArticleMapper">
+
+    <!-- =============================================================== -->
+    <!-- 结果映射 — 下划线转驼峰（source_id → sourceId）               -->
+    <!-- =============================================================== -->
+    <resultMap id="BaseResultMap" type="com.webmagic.common.entity.TechArticle">
+        <id column="id" property="id"/>
+        <result column="title" property="title"/>
+        <result column="summary" property="summary"/>
+        <result column="content_url" property="contentUrl"/>
+        <result column="author" property="author"/>
+        <result column="tags" property="tags"/>
+        <result column="source" property="source"/>
+        <result column="source_id" property="sourceId"/>
+        <result column="publish_time" property="publishTime"/>
+        <result column="view_count" property="viewCount"/>
+        <result column="star_count" property="starCount"/>
+        <result column="dedup_key" property="dedupKey"/>
+        <result column="crawl_time" property="crawlTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <!-- =============================================================== -->
+    <!-- 批量插入（INSERT IGNORE — 去重兜底）                          -->
+    <!--                                                                -->
+    <!-- 【JD 覆盖：MySQL/MyBatis — 批量插入 + 去重】                  -->
+    <!--                                                                -->
+    <!-- INSERT IGNORE：dedup_key 冲突时自动跳过，不报错               -->
+    <!-- 面试话术："即使内存去重 Pipeline 漏了，数据库的 UNIQUE         -->
+    <!--           索引也能保证不重复，这就是双层保护。"                -->
+    <!-- =============================================================== -->
+    <insert id="batchInsertIgnore" parameterType="list">
+        INSERT IGNORE INTO tech_article
+            (title, summary, content_url, author, tags, source, source_id,
+             publish_time, view_count, star_count, dedup_key)
+        VALUES
+        <foreach collection="list" item="article" separator=",">
+            (
+                #{article.title},
+                #{article.summary},
+                #{article.contentUrl},
+                #{article.author},
+                #{article.tags},
+                #{article.source},
+                #{article.sourceId},
+                #{article.publishTime},
+                #{article.viewCount},
+                #{article.starCount},
+                #{article.dedupKey}
+            )
+        </foreach>
+    </insert>
+
+    <!-- =============================================================== -->
+    <!-- 来源统计 — 首页 Dashboard                                     -->
+    <!--                                                                -->
+    <!-- 面试话术："首页不再是空白页，而是展示每个来源有多少条数据，    -->
+    <!--          面试官一眼就能看到爬虫的工作成果。"                  -->
+    <!-- =============================================================== -->
+    <select id="countBySource" resultType="map">
+        SELECT
+            source,
+            COUNT(*) AS cnt
+        FROM tech_article
+        GROUP BY source
+        ORDER BY cnt DESC
+    </select>
+
+    <!-- =============================================================== -->
+    <!-- 条件搜索 — 动态 SQL（if/where）                               -->
+    <!--                                                                -->
+    <!-- 【JD 覆盖：MyBatis 动态 SQL】                                 -->
+    <!--  关键字搜索：标题 + 摘要 + 标签 三字段 LIKE 匹配              -->
+    <!--  来源筛选：source 精确匹配                                    -->
+    <!--  排序：按发布时间倒序                                        -->
+    <!-- =============================================================== -->
+    <select id="searchByCondition" resultMap="BaseResultMap">
+        SELECT * FROM tech_article
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (
+                    title   LIKE CONCAT('%', #{keyword}, '%')
+                    OR summary LIKE CONCAT('%', #{keyword}, '%')
+                    OR tags    LIKE CONCAT('%', #{keyword}, '%')
+                )
+            </if>
+            <if test="source != null and source != ''">
+                AND source = #{source}
+            </if>
+        </where>
+        ORDER BY publish_time DESC
+    </select>
+
+    <!-- 根据 ID 查询 -->
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT * FROM tech_article WHERE id = #{id}
+    </select>
+
+    <!-- 去重键查重 -->
+    <select id="countByDedupKey" resultType="int">
+        SELECT COUNT(*) FROM tech_article WHERE dedup_key = #{dedupKey}
+    </select>
+
+    <!-- 最新 N 条 — 首页展示 -->
+    <select id="selectLatest" resultMap="BaseResultMap">
+        SELECT * FROM tech_article
+        ORDER BY crawl_time DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 文章总数 -->
+    <select id="countAll" resultType="int">
+        SELECT COUNT(*) FROM tech_article
+    </select>
+
+</mapper>

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${article.title} + ' - Article Detail'">Article Detail</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="brand">Java InfoHub</div>
+    <div class="nav-links">
+        <a href="/">Home</a>
+        <a href="/articles">Articles</a>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="detail-container" th:if="${article != null}">
+
+        <h1 th:text="${article.title}">Title</h1>
+
+        <div class="detail-meta">
+            <span th:class="'source-badge ' + ${article.source.toLowerCase()}"
+                  th:text="${article.source}">Source</span>
+            <span th:if="${article.author}">Author: <strong th:text="${article.author}"></strong></span>
+            <span th:if="${article.publishTime}">Published:
+                <span th:text="${#temporals.format(article.publishTime, 'yyyy-MM-dd HH:mm:ss')}"></span>
+            </span>
+            <span th:if="${article.viewCount > 0}">Views: <span th:text="${article.viewCount}"></span></span>
+            <span th:if="${article.starCount > 0}">Stars: <span th:text="${article.starCount}"></span></span>
+            <span>Crawled:
+                <span th:text="${#temporals.format(article.crawlTime, 'yyyy-MM-dd HH:mm')}"></span>
+            </span>
+        </div>
+
+        <div class="detail-tags" th:if="${article.tags}">
+            <span th:each="tag : ${#strings.arraySplit(article.tags, ',')}"
+                  class="job-tag" th:text="${tag}">Tag</span>
+        </div>
+
+        <div class="detail-content" style="margin-top:20px;" th:if="${article.summary}">
+            <h3 style="color:#1a1a2e;margin-bottom:12px;">Summary</h3>
+            <p th:text="${article.summary}"></p>
+        </div>
+
+        <div style="margin-top:32px;padding-top:20px;border-top:1px solid #f0f0f0;">
+            <a href="javascript:history.back()" class="btn-back">Back to list</a>
+            <a th:if="${article.contentUrl}" th:href="${article.contentUrl}"
+               target="_blank" class="btn-original">View Original</a>
+        </div>
+    </div>
+</div>
+
+<div class="footer">
+    Java Developer Info Hub - Article Detail
+</div>
+
+</body>
+</html>

@@ -1,0 +1,46 @@
+version: '3.8'
+
+# ================================================================
+# Java 开发者信息聚合平台 — Docker 环境
+#
+# 使用方法:
+#   docker compose up -d          # 启动所有中间件
+#   docker compose down           # 停止并删除
+#   docker compose logs -f mysql  # 查看 MySQL 日志
+# ================================================================
+
+services:
+
+  # ---- MySQL 8.0 ----
+  mysql:
+    image: mysql:8.0
+    container_name: javainfohub-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: java_info_hub
+      MYSQL_CHARSET: utf8mb4
+      MYSQL_COLLATION: utf8mb4_unicode_ci
+      TZ: Asia/Shanghai
+    ports:
+      - "3306:3306"
+    volumes:
+      # 初始化脚本（首次启动时自动执行 *.sql 文件）
+      - ./schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./init-data.sql:/docker-entrypoint-initdb.d/02-init-data.sql
+      # 数据持久化
+      - mysql-data:/var/lib/mysql
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  mysql-data:
+    name: javainfohub-mysql-data

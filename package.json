@@ -1,0 +1,26 @@
+{
+  "name": "java-info-hub",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Java 开发者信息聚合平台 — npm 一键启动脚本",
+  "scripts": {
+
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "db:logs": "docker compose logs -f mysql",
+
+    "frontend:install": "cd webmagic-web/src/main/frontend && npm install",
+    "frontend:build": "cd webmagic-web/src/main/frontend && npm run build",
+    "frontend:dev": "cd webmagic-web/src/main/frontend && npm run dev",
+
+    "backend:build": "mvn install -DskipTests",
+    "backend:run": "mvn spring-boot:run -pl webmagic-web",
+
+    "setup": "npm run frontend:install && npm run db:up && npm run backend:build",
+    "start": "npm run db:up && npm run frontend:build && npm run backend:build && npm run backend:run",
+    "dev": "npm run db:up && npm run backend:run",
+    "stop": "npm run db:down",
+
+    "prod": "npm run start"
+  }
+}
