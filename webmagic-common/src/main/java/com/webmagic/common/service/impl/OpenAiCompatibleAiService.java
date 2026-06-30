@@ -105,7 +105,7 @@ public class OpenAiCompatibleAiService implements AiService {
                 "域名：" + domainHint + "\n\n" +
                 "从以下HTML提取所有文章：\n" + truncated;
 
-        String response = chat(systemPrompt, userPrompt);
+        String response = chatJson(systemPrompt, userPrompt);
         if (response == null || response.isBlank()) {
             return Collections.emptyList();
         }
@@ -148,7 +148,7 @@ public class OpenAiCompatibleAiService implements AiService {
                 "原文参考：" + (originalText != null ? originalText : "（无）") + "\n\n" +
                 "生成中文摘要：";
 
-        String response = chat(systemPrompt, userPrompt);
+        String response = chatText(systemPrompt, userPrompt);
         if (response != null && !response.isBlank()) {
             // 清理响应中的 markdown 标记
             response = response.replaceAll("^摘要[：:]\\s*", "").trim();
@@ -172,7 +172,7 @@ public class OpenAiCompatibleAiService implements AiService {
                 "摘要：" + (summary != null ? summary : "（无）") + "\n\n" +
                 "生成标签JSON数组：";
 
-        String response = chat(systemPrompt, userPrompt);
+        String response = chatJson(systemPrompt, userPrompt);
         if (response != null && !response.isBlank()) {
             try {
                 return objectMapper.readValue(response,
@@ -215,9 +215,20 @@ public class OpenAiCompatibleAiService implements AiService {
     // ==================== 内部方法 ====================
 
     /**
-     * 核心 — 调用 OpenAI 兼容 Chat API
+     * 核心 — 调用 OpenAI 兼容 Chat API（JSON 模式，用于结构化提取）
      */
-    private String chat(String systemPrompt, String userPrompt) {
+    private String chatJson(String systemPrompt, String userPrompt) {
+        return doChat(systemPrompt, userPrompt, true);
+    }
+
+    /**
+     * 核心 — 调用 OpenAI 兼容 Chat API（文本模式，用于摘要/标签生成）
+     */
+    private String chatText(String systemPrompt, String userPrompt) {
+        return doChat(systemPrompt, userPrompt, false);
+    }
+
+    private String doChat(String systemPrompt, String userPrompt, boolean jsonMode) {
         if (!isAvailable()) {
             log.debug("AI service unavailable: circuit={}, calls={}/{}",
                     circuitOpen, sessionCallCount.get(), maxRequestsPerSession);
@@ -240,16 +251,18 @@ public class OpenAiCompatibleAiService implements AiService {
             sessionCallCount.incrementAndGet();
             lastCallTime = System.currentTimeMillis();
 
-            // 构建请求
-            AiChatRequest request = AiChatRequest.builder()
+            // 构建请求 — JSON 模式才设 response_format
+            AiChatRequest.AiChatRequestBuilder builder = AiChatRequest.builder()
                     .model(model)
                     .messages(Arrays.asList(
                             AiChatMessage.system(systemPrompt),
                             AiChatMessage.user(userPrompt)))
                     .temperature(temperature)
-                    .maxTokens(maxTokens)
-                    .responseFormat(new AiChatRequest.ResponseFormat("json_object"))
-                    .build();
+                    .maxTokens(maxTokens);
+            if (jsonMode) {
+                builder.responseFormat(new AiChatRequest.ResponseFormat("json_object"));
+            }
+            AiChatRequest request = builder.build();
 
             String jsonBody = objectMapper.writeValueAsString(request);
 
@@ -306,8 +319,7 @@ public class OpenAiCompatibleAiService implements AiService {
                     for (int i = 0; i < backoff.length && isAvailable(); i++) {
                         try { Thread.sleep(backoff[i]); } catch (InterruptedException ex) { Thread.currentThread().interrupt(); break; }
                         log.info("Retrying AI call after 429 rate limit (attempt {}/{})", i + 1, backoff.length);
-                        // 递归重试 — 简化实现
-                        String retryResult = chatInternal(systemPrompt, userPrompt);
+                        String retryResult = doChatInternal(systemPrompt, userPrompt, jsonMode);
                         if (retryResult != null) return retryResult;
                     }
                 }
@@ -328,17 +340,19 @@ public class OpenAiCompatibleAiService implements AiService {
     }
 
     /** 内部重试用 — 跳过速率限制检查 */
-    private String chatInternal(String systemPrompt, String userPrompt) {
+    private String doChatInternal(String systemPrompt, String userPrompt, boolean jsonMode) {
         try {
-            AiChatRequest request = AiChatRequest.builder()
+            AiChatRequest.AiChatRequestBuilder builder = AiChatRequest.builder()
                     .model(model)
                     .messages(Arrays.asList(
                             AiChatMessage.system(systemPrompt),
                             AiChatMessage.user(userPrompt)))
                     .temperature(temperature)
-                    .maxTokens(maxTokens)
-                    .responseFormat(new AiChatRequest.ResponseFormat("json_object"))
-                    .build();
+                    .maxTokens(maxTokens);
+            if (jsonMode) {
+                builder.responseFormat(new AiChatRequest.ResponseFormat("json_object"));
+            }
+            AiChatRequest request = builder.build();
 
             String jsonBody = objectMapper.writeValueAsString(request);
             URL url = URI.create(baseUrl + "/chat/completions").toURL();

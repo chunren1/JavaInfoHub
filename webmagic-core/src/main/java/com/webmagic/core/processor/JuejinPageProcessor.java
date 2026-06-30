@@ -95,9 +95,13 @@ import java.util.Map;
 @Scope("prototype")
 public class JuejinPageProcessor implements PageProcessor {
 
-    /** 掘金推荐 API 地址 */
+    /** 掘金推荐 API 地址（v2 新版） */
     private static final String API_URL =
-            "https://api.juejin.cn/recommend_api/v1/article/recommend_all_feed";
+            "https://api.juejin.cn/recommend_api/v1/article/recommend_cate_feed";
+
+    /** 备用 API（v1 已下线时自动切换） */
+    private static final String API_URL_FALLBACK =
+            "https://api.juejin.cn/content_api/v1/content/article_rank?type=3";
 
     /** 爬取起点（根请求 URL） */
     private static final String BASE_URL = "https://juejin.cn";
@@ -166,13 +170,16 @@ public class JuejinPageProcessor implements PageProcessor {
             return;
         }
 
-        // 如果是 API 响应（JSON）
-        if (url.startsWith(API_URL)) {
+        // 如果是 API 响应（JSON）— 支持主 API 和备用 API
+        if (url.startsWith(API_URL) || url.startsWith(API_URL_FALLBACK)) {
             currentPage++;
             String rawJson = page.getRawText();
 
             if (rawJson == null || rawJson.isEmpty()) {
-                log.warn("掘金 API 返回空响应，结束爬取");
+                log.warn("掘金 API 返回空响应，尝试 AI fallback...");
+                List<TechArticle> aiArticles = tryAiFallback(page);
+                page.putField("articles", aiArticles);
+                log.info("【掘金】第 {} 页，AI 解析 {} 条", currentPage, aiArticles.size());
                 return;
             }
 
@@ -180,10 +187,24 @@ public class JuejinPageProcessor implements PageProcessor {
             JSONObject response = JSON.parseObject(rawJson);
             int errNo = response.getIntValue("err_no");
 
-            // 【状态码处理】检查 API 业务状态码
+            // 主 API 失败 → 尝试备用 API
+            if (errNo != 0 && url.startsWith(API_URL) && !url.startsWith(API_URL_FALLBACK)) {
+                log.warn("掘金主 API 失败(err_no={})，切换到备用API: {}", errNo,
+                        response.getString("err_msg"));
+                SleepUtils.randomDelay(1000, 2000);
+                Request fallbackRequest = buildFallbackRequest();
+                page.addTargetRequest(fallbackRequest);
+                page.setSkip(true);
+                return;
+            }
+
+            // 备用 API 也失败 → AI fallback
             if (errNo != 0) {
-                log.error("掘金 API 返回错误：err_no={}, err_msg={}",
+                log.error("掘金 API 全部失败：err_no={}, err_msg={}",
                         errNo, response.getString("err_msg"));
+                List<TechArticle> aiArticles = tryAiFallback(page);
+                page.putField("articles", aiArticles);
+                log.info("【掘金】第 {} 页，AI 兜底解析 {} 条", currentPage, aiArticles.size());
                 return;
             }
 
@@ -202,17 +223,20 @@ public class JuejinPageProcessor implements PageProcessor {
             page.putField("articles", articles);
             log.info("【掘金】第 {} 页，解析 {} 条", currentPage, articles.size());
 
-            // 检查是否还有下一页
-            boolean hasMore = response.getBooleanValue("has_more");
-            String nextCursor = response.getString("cursor");
+            // 检查是否还有下一页（仅主 API 支持分页）
+            if (url.startsWith(API_URL) && !url.startsWith(API_URL_FALLBACK)) {
+                boolean hasMore = response.getBooleanValue("has_more");
+                String nextCursor = response.getString("cursor");
 
-            if (hasMore && nextCursor != null && currentPage < maxPages) {
-                // 礼貌延迟
-                SleepUtils.randomDelay(2000, 4000);
-
-                // 添加下一页请求
-                Request nextRequest = buildPostRequest(nextCursor);
-                page.addTargetRequest(nextRequest);
+                if (hasMore && nextCursor != null && currentPage < maxPages) {
+                    SleepUtils.randomDelay(2000, 4000);
+                    Request nextRequest = buildPostRequest(nextCursor);
+                    page.addTargetRequest(nextRequest);
+                    log.debug("掘金 → 添加下一页 cursor={}", nextCursor);
+                } else {
+                    log.info("掘金爬取完成，共 {} 页", currentPage);
+                }
+            }
                 log.debug("掘金 → 添加下一页 cursor={}", nextCursor);
             } else {
                 log.info("掘金爬取完成，共 {} 页", currentPage);
@@ -247,6 +271,31 @@ public class JuejinPageProcessor implements PageProcessor {
         request.setRequestBody(HttpRequestBody.json(JSON.toJSONString(body), "UTF-8"));
 
         return request;
+    }
+
+    /**
+     * 构造备用 API 请求（content_api 榜单接口）
+     * v1 recommend_all_feed 已下线时的降级方案
+     */
+    private Request buildFallbackRequest() {
+        Map<String, Object> body = new HashMap<>();
+        body.put("type", 3);              // 3 = 综合热榜
+        body.put("cursor", "0");
+
+        Request request = new Request(API_URL_FALLBACK);
+        request.setMethod(HttpConstant.Method.POST);
+        request.setRequestBody(HttpRequestBody.json(JSON.toJSONString(body), "UTF-8"));
+        return request;
+    }
+
+    /**
+     * AI 兜底提取
+     */
+    private List<TechArticle> tryAiFallback(Page page) {
+        if (aiProcessorHelper != null && aiProcessorHelper.shouldFallback(0)) {
+            return aiProcessorHelper.extractArticlesFromHtml(page, SourceType.JUEJIN);
+        }
+        return new ArrayList<>();
     }
 
     /**

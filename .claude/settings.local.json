@@ -36,7 +36,24 @@
       "Bash(mvn spring-boot:run -pl webmagic-web -Dskipebmagic-web -DskipTests)",
       "Bash(curl -s http://localhost:8080/articles 2>&1 | grep -o P'[^<]*<[^>]*>[^<]*[^<]*<[^>]*>[^<]*' | head -10 *)",
       "Bash(npm install *)",
-      "Bash(npx vite *)"
+      "Bash(npx vite *)",
+      "Bash(docker-compose up *)",
+      "Bash(mvn spring-boot:run -pl webmagic-web)",
+      "Bash(sort -t. -k2)",
+      "Bash(cat \\\\\\\\\\\\\"D:/JavaInfoHub/webmagic-common/src/main/java/com/webmagic/common/dto/AiChatResponse.java\\\\\\\\\\\\\"\\\\ *)",
+      "Bash(cat \\\\\\\\\\\\\"D:/JavaInfoHub/webmagic-common/src/main/java/com/webmagic/common/dto/AiChatMessage.java\\\\\\\\\\\\\"\\\\ *)",
+      "Bash(cd D:\\\\\\\\JavaInfoHub)",
+      "Bash(taskkill /F /IM java.exe)",
+      "Bash(netstat -ano)",
+      "Bash(taskkill /F /PID 23652 2>&1 && sleep 2 && echo \\\\\"Port 8080 freed\\\\\", description: *)",
+      "Bash(cmd.exe *)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(f'OK: {d[\\\\\"success\\\\\"]}, total={d[\\\\\"data\\\\\"][\\\\\"totalArticles\\\\\"]}'\\) if d.get\\('success'\\) else print\\(f'FAIL: {d}'\\)\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\({k:d.get\\(k\\) for k in ['success','message','result'] if k in d}, ensure_ascii=False, indent=2\\)\\)\")",
+      "Bash(curl -s -X POST http://localhost:8080/api/crawl/trigger/segmentfault} *)",
+      "Bash(curl -s http://localhost:8080/api/crawl/status} *)",
+      "Bash(grep \\\\\"enriched\\\\\" \\\\\"C:/Users/靖敏/AppData/Local/Temp/claude/D--JavaInfoHub/92ebbe5e-1a16-48d3-a562-330d77f24344/tasks/bm5je1hiv.output\\\\\" 2>&1 | head -10 *)",
+      "Bash(grep \"enriched\\\\\\\\|Enrichment\\\\\\\\|AI\" \\\\\"C:/Users/靖敏/AppData/Local/Temp/claude/D--JavaInfoHub/92ebbe5e-1a16-48d3-a562-330d77f24344/tasks/bm5je1hiv.output\\\\\")",
+      "Bash(python3 -c ' *)"
     ]
   }
 }
