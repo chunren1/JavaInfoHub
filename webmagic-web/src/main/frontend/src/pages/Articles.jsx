@@ -1,53 +1,33 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { getArticles } from '../api/client';
+import { useApi } from '../hooks/useApi';
 import SearchBar from '../components/SearchBar';
 import ArticleCard from '../components/ArticleCard';
 import Pagination from '../components/Pagination';
+import { CardSkeleton } from '../components/LoadingSkeleton';
 
 export default function Articles() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [loading, setLoading] = useState(false);
-  const [pageData, setPageData] = useState(null);
-  const [error, setError] = useState(null);
 
   const keyword = searchParams.get('keyword') || '';
   const source = searchParams.get('source') || '';
   const page = parseInt(searchParams.get('page') || '1', 10);
 
-  const loadArticles = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await getArticles({ keyword, source, page });
-      if (res.success) {
-        setPageData(res.data);
-      } else {
-        setError(res.message);
-      }
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [keyword, source, page]);
+  const { data: pageData, loading, error } =
+    useApi(() => getArticles({ keyword, source, page }), [keyword, source, page]);
 
-  useEffect(() => { loadArticles(); }, [loadArticles]);
+  const handleSearch = useCallback(({ keyword: kw, source: src }) => {
+    setSearchParams(kw || src ? { ...(kw && { keyword: kw }), ...(src && { source: src }) } : {});
+  }, [setSearchParams]);
 
-  function handleSearch({ keyword: kw, source: src }) {
-    const params = {};
-    if (kw) params.keyword = kw;
-    if (src) params.source = src;
-    setSearchParams(params); // page resets to 1 implicitly
-  }
-
-  function handlePageChange(newPage) {
+  const handlePageChange = useCallback((newPage) => {
     const params = {};
     if (keyword) params.keyword = keyword;
     if (source) params.source = source;
     params.page = String(newPage);
     setSearchParams(params);
-  }
+  }, [keyword, source, setSearchParams]);
 
   return (
     <>
@@ -63,11 +43,11 @@ export default function Articles() {
         </div>
       )}
 
-      {loading && <div className="loading"><div className="spinner" /></div>}
+      {loading && <CardSkeleton count={5} />}
 
-      {error && <div className="error-banner">{error}</div>}
+      {error && <div className="error-banner">❌ {error}</div>}
 
-      {!loading && !error && pageData && pageData.list.length > 0 && (
+      {!loading && !error && pageData?.list?.length > 0 && (
         <>
           <ul className="article-list">
             {pageData.list.map(a => <ArticleCard key={a.id} article={a} />)}
@@ -76,7 +56,7 @@ export default function Articles() {
         </>
       )}
 
-      {!loading && !error && pageData && pageData.list.length === 0 && (
+      {!loading && !error && pageData?.list?.length === 0 && (
         <div className="empty-state">
           <div className="empty-icon">📭</div>
           <p>{keyword || source ? '未找到匹配的文章' : '暂无文章数据'}</p>

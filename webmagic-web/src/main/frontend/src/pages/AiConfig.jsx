@@ -1,18 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { getAiStatus, testAiConnection } from '../api/client';
+import { useApi } from '../hooks/useApi';
 
 export default function AiConfig() {
-  const [status, setStatus] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { data: status, loading } = useApi(getAiStatus, []);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState(null);
-
-  useEffect(() => {
-    getAiStatus()
-      .then(res => setStatus(res.data))
-      .catch(err => setStatus(null))
-      .finally(() => setLoading(false));
-  }, []);
 
   async function handleTest() {
     setTesting(true);
@@ -36,7 +29,7 @@ export default function AiConfig() {
       {status && (
         <div className="detail-container" style={{ marginBottom: 24 }}>
           <div className="detail-meta" style={{ borderBottom: 'none' }}>
-            <span className={`badge badge-${status.enabled ? 'oschina' : 'segmentfault'}`}
+            <span className={`badge badge-${status.enabled ? 'oschina' : 'github'}`}
               style={status.enabled ? {} : { background: '#999' }}>
               {status.enabled ? '已启用' : '已禁用'}
             </span>
@@ -51,7 +44,7 @@ export default function AiConfig() {
               <>
                 <span>API 调用：{status.callStats.totalCalls} 次</span>
                 <span>错误：{status.callStats.errorCount} 次</span>
-                <span>熔断：{status.callStats.circuitOpen ? '⚠️ 已熔断' : '正常'}</span>
+                <span>熔断：{status.callStats.circuitOpen ? '⚠️ 已熔断' : '🟢 正常'}</span>
               </>
             )}
           </div>
@@ -64,8 +57,9 @@ export default function AiConfig() {
       )}
 
       {testResult && (
-        <div className={`error-banner`}
-          style={testResult.success ? { background: '#f6ffed', border: '1px solid #b7eb8f', color: '#389e0d' } : {}}>
+        <div className="banner" style={testResult.success
+          ? { background: '#f6ffed', border: '1px solid #b7eb8f', color: '#389e0d' }
+          : {}}>
           <strong>{testResult.success ? '✅ ' : '❌ '}</strong>
           {testResult.message}
           {testResult.latencyMs && <span> · 延迟 {testResult.latencyMs}ms</span>}
@@ -84,8 +78,8 @@ export default function AiConfig() {
       )}
 
       <div className="detail-container" style={{ marginTop: 24 }}>
-        <h3 style={{ marginBottom: 12, color: '#1a1a2e' }}>如何使用</h3>
-        <ol style={{ paddingLeft: 20, lineHeight: 2.2, color: '#666' }}>
+        <h3 style={{ marginBottom: 12, color: '#1a1a2e' }}>使用方法</h3>
+        <ol className="help-list">
           <li>注册 <a href="https://siliconflow.cn" target="_blank" rel="noreferrer">硅基流动</a>，获取免费 API Key</li>
           <li>设置环境变量：<code>export AI_API_KEY=sk-xxxxx</code></li>
           <li>修改 <code>application.yml</code> 中 <code>ai.enabled: true</code></li>
@@ -95,13 +89,13 @@ export default function AiConfig() {
       </div>
 
       <div className="detail-container" style={{ marginTop: 16 }}>
-        <h3 style={{ marginBottom: 12, color: '#1a1a2e' }}>面试展示</h3>
-        <ul style={{ paddingLeft: 20, lineHeight: 2.2, color: '#666' }}>
-          <li><strong>提取兜底</strong>：当网站改版导致 CSS/XPath 失效时，AI 自动从 HTML 提取结构化数据</li>
+        <h3 style={{ marginBottom: 12, color: '#1a1a2e' }}>技术要点</h3>
+        <ul className="help-list">
+          <li><strong>提取兜底</strong>：网站改版导致 CSS/XPath 失效时，AI 自动从 HTML 提取数据</li>
           <li><strong>摘要生成</strong>：每篇文章自动生成 2-3 句中文摘要</li>
-          <li><strong>标签生成</strong>：自动添加技术标签（Spring Boot、微服务、Kubernetes 等）</li>
-          <li><strong>熔断器</strong>：连续 5 次失败自动关闭 AI，60 秒后重试</li>
-          <li><strong>幻觉检测</strong>：验证 AI 提取的标题是否在原始 HTML 中存在</li>
+          <li><strong>标签生成</strong>：自动补充技术标签（Spring Boot、微服务、K8s 等）</li>
+          <li><strong>熔断器</strong>：连续 5 次失败自动关闭，60 秒后重试</li>
+          <li><strong>幻觉检测</strong>：验证 AI 提取的标题是否存在于原始 HTML</li>
         </ul>
       </div>
     </>

@@ -1,37 +1,15 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { useApi } from '../hooks/useApi';
 import { getArticleDetail } from '../api/client';
+import { formatTime } from '../utils/format';
+import { CardSkeleton } from '../components/LoadingSkeleton';
 
-function formatTime(dateStr) {
-  if (!dateStr) return null;
-  const d = new Date(dateStr);
-  const pad = n => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-}
-
-export default function ArticleDetail() {
-  const { id } = useParams();
+export default function ArticleDetail({ id: propId }) {
+  const id = propId || window.location.pathname.split('/').pop();
   const navigate = useNavigate();
-  const [article, setArticle] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { data: article, loading, error } = useApi(() => getArticleDetail(id), [id]);
 
-  useEffect(() => {
-    setLoading(true);
-    setError(null);
-    getArticleDetail(id)
-      .then(res => {
-        if (res.success) {
-          setArticle(res.data);
-        } else {
-          setError(res.message);
-        }
-      })
-      .catch(err => setError(err.message))
-      .finally(() => setLoading(false));
-  }, [id]);
-
-  if (loading) return <div className="loading"><div className="spinner" /></div>;
+  if (loading) return <CardSkeleton count={1} />;
 
   if (error || !article) {
     return (
@@ -52,16 +30,19 @@ export default function ArticleDetail() {
 
       <div className="detail-meta">
         <span className={`badge badge-${s}`}>{article.source}</span>
-        {article.author && <span>👤 作者：<strong>{article.author}</strong></span>}
-        {article.publishTime && <span>📅 发布于 {formatTime(article.publishTime)}</span>}
-        {article.viewCount > 0 && <span>👁 {article.viewCount} 浏览</span>}
-        {article.starCount > 0 && <span>❤ {article.starCount} 收藏</span>}
+        {tags.includes('[AI]') && <span className="tag tag-ai">🤖 AI 增强</span>}
+        {article.author && <span>👤 <strong>{article.author}</strong></span>}
+        {article.publishTime && <span>📅 {formatTime(article.publishTime)}</span>}
+        {article.viewCount > 0 && <span>👁 {article.viewCount.toLocaleString()} 浏览</span>}
+        {article.starCount > 0 && <span>❤ {article.starCount.toLocaleString()} 收藏</span>}
         {article.crawlTime && <span>🕐 抓取于 {formatTime(article.crawlTime)}</span>}
       </div>
 
       {tags.length > 0 && (
         <div className="detail-tags">
-          {tags.map((tag, i) => <span key={i} className="tag">{tag.trim()}</span>)}
+          {tags.filter(t => t !== '[AI]').map((tag, i) => (
+            <span key={i} className="tag">{tag.trim()}</span>
+          ))}
         </div>
       )}
 

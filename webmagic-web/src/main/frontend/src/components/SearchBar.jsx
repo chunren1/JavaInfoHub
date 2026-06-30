@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
-export default function SearchBar({ onSearch }) {
+/**
+ * 搜索栏组件 — 关键字 + 来源筛选
+ */
+export default function SearchBar({ onSearch, placeholder }) {
   const [searchParams] = useSearchParams();
   const [keyword, setKeyword] = useState(searchParams.get('keyword') || '');
   const [source, setSource] = useState(searchParams.get('source') || '');
@@ -23,11 +26,12 @@ export default function SearchBar({ onSearch }) {
         <input
           className="search-input"
           type="text"
-          placeholder="🔍 搜索文章标题、摘要、标签..."
+          placeholder={placeholder || '🔍 搜索文章标题、摘要、标签...'}
           value={keyword}
           onChange={e => setKeyword(e.target.value)}
+          aria-label="搜索关键字"
         />
-        <select className="search-select" value={source} onChange={e => setSource(e.target.value)}>
+        <select className="search-select" value={source} onChange={e => setSource(e.target.value)} aria-label="来源筛选">
           <option value="">全部来源</option>
           <option value="JUEJIN">掘金</option>
           <option value="SEGMENTFAULT">SegmentFault</option>
