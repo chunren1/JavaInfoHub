@@ -40,9 +40,9 @@ logging:
 crawl:
   max-pages:
     juejin: 3
-    segmentfault: 3
-    github: 1
-    oschina: 3
+    segmentfault: 5
+    github: 3
+    oschina: 5
   sleep-time: 3000
   retry:
     max-times: 3
